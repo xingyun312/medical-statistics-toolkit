@@ -1,0 +1,55 @@
+# 原始数据：整个目录不提交，包含 Excel、CSV 及其他患者数据格式
+/data/raw/**
+!/data/raw/.gitkeep
+
+# 清理后的数据默认不提交
+/data/processed/**
+!/data/processed/.gitkeep
+
+# Excel 工作簿默认不提交（防止误提交临床数据）
+*.xlsx
+*.xls
+*.xlsm
+
+# 仅允许 tests/fixtures 下明确命名的模拟工作簿
+!/tests/fixtures/
+!/tests/fixtures/simulated_*.xlsx
+
+# 分析输出默认不提交
+/output/tables/**
+!/output/tables/.gitkeep
+/output/figures/**
+!/output/figures/.gitkeep
+/output/reports/**
+!/output/reports/.gitkeep
+
+# R / RStudio 本地状态与临时文件
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.Rproj
+*.Rout
+.Renviron
+.Renviron.*
+
+# renv 项目本地安装库与缓存；保留 renv.lock、settings.json、activate.R
+renv/library/
+renv/staging/
+renv/python/
+renv/local/
+renv/cellar/
+renv/cache/
+
+# 通用临时文件与操作系统文件
+*.tmp
+*.temp
+*.bak
+*.log
+*~
+~$*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+!/tests/fixtures/simulated_quality_checks.xlsx
