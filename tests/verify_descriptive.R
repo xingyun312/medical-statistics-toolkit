@@ -1,0 +1,45 @@
+# 使用 100% 模拟数据验证第四阶段描述统计和导出功能。
+source("R/00_packages.R")
+source("R/01_import_data.R")
+source("R/02_data_quality.R")
+source("R/03_descriptive.R")
+source("R/04_export_results.R")
+
+fixture <- file.path("tests", "fixtures", "simulated_descriptive_data.xlsx")
+if (!file.exists(fixture)) stop("请先运行 tests/create_simulated_descriptive_data.R。", call. = FALSE)
+data <- import_excel(fixture)
+types <- c(simulation_flag = "text", record_id = "identifier", treatment = "categorical",
+  age = "continuous", bmi = "continuous", sex = "categorical",
+  disease_stage = "categorical", response = "binary")
+before <- data
+result <- create_descriptive_summary(data, types, by = "treatment")
+stopifnot(identical(data, before), result$n_total == 12L, nrow(result$group_counts) == 3L)
+stopifnot(any(result$group_counts$group == "缺失分组"), sum(result$group_counts$n) == nrow(data))
+stopifnot(any(result$missing_summary$variable == "age" & result$missing_summary$group == "Overall" & result$missing_summary$missing_n == 1L))
+stopifnot(any(result$missing_summary$variable == "sex" & result$missing_summary$missing_n == 1L))
+stopifnot(any(grepl("Mean ± SD", result$table_data[[1]], fixed = TRUE)))
+stopifnot(any(grepl("47 ± 7", result$table_data[[2]], fixed = TRUE)))
+stopifnot(any(grepl("Female", result$table_data[[1]], fixed = TRUE)))
+stopifnot(!any(grepl("p.value|P-value|P 值", names(result$table_data), ignore.case = TRUE)))
+
+ungrouped <- create_descriptive_summary(data, types)
+stopifnot(ungrouped$n_total == 12L, nrow(ungrouped$group_counts) == 1L)
+stopifnot(inherits(try(create_descriptive_summary(data, types[-1]), silent = TRUE), "try-error"))
+bad_types <- types; bad_types[["age"]] <- "unknown_type"
+stopifnot(inherits(try(create_descriptive_summary(data, bad_types, variables = "age"), silent = TRUE), "try-error"))
+
+excel_out <- tempfile(fileext = ".xlsx")
+word_out <- tempfile(fileext = ".docx")
+export_descriptive_excel(result, excel_out)
+export_descriptive_word(result, word_out)
+stopifnot(file.exists(excel_out), file.info(excel_out)$size > 0, file.exists(word_out), file.info(word_out)$size > 0)
+word_content <- officer::docx_summary(officer::read_docx(word_out))
+stopifnot(any(grepl("描述性统计表", word_content$text, fixed = TRUE)))
+stopifnot(any(grepl("缺失数据", word_content$text, fixed = TRUE)))
+excel_sheets <- readxl::excel_sheets(excel_out)
+stopifnot(identical(excel_sheets, c("描述性统计", "缺失数据", "分组样本量", "说明")))
+exported_missing <- readxl::read_excel(excel_out, sheet = "缺失数据")
+stopifnot(any(exported_missing$variable == "age" & exported_missing$missing_n == 1L))
+stopifnot(inherits(try(export_descriptive_excel(result, excel_out), silent = TRUE), "try-error"))
+unlink(c(excel_out, word_out))
+message("描述性统计、分组、缺失值及 Excel/Word 导出模拟数据验证通过。")

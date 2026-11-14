@@ -53,3 +53,4 @@ Thumbs.db
 desktop.ini
 
 !/tests/fixtures/simulated_quality_checks.xlsx
+!/tests/fixtures/simulated_descriptive_data.xlsx
